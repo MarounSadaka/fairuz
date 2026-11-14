@@ -414,7 +414,7 @@ let W=innerWidth,H=innerHeight,D=1;
 const CAP=90000,PB=new Float32Array(CAP*7);let pn=0;
 const LCAP=16000,LB=new Float32Array(LCAP*7);let lnN=0;
 let GL=null,c2=null,bgGrad=null,LOD=1,glMaxPt=256,maxPt=256,flash=0;
-const SEP=.8;function pt(x,y,s,r,g,b,a){{const l=.3*r+.59*g+.11*b;r+=(l*1.12-r)*SEP;g+=(l*.9-g)*SEP;b+=(l*.6-b)*SEP}
+let SEP=.8;function pt(x,y,s,r,g,b,a){{const l=.3*r+.59*g+.11*b;r+=(l*1.12-r)*SEP;g+=(l*.9-g)*SEP;b+=(l*.6-b)*SEP}
  if(a<.004||s<.3||pn>=CAP)return;
  if(s>maxPt)s=maxPt;const h=s*.5;if(x<-h||y<-h||x>W+h||y>H+h)return;
  const i=pn*7;PB[i]=x;PB[i+1]=y;PB[i+2]=s;PB[i+3]=r;PB[i+4]=g;PB[i+5]=b;PB[i+6]=a;pn++;
@@ -1246,6 +1246,11 @@ function buildCredits(){
  add('div','جارة القمر 🌙').className='end';
  roll.style.setProperty('--rollDur',Math.max(14,lines*2.4+8)+'s');
 }
+let fzT=0;
+window.FZEND=function(){clearTimeout(fzT);const wasStopped=FZ.stopped;FZ.stopped=false;if(fin)endFinale();
+ SEP=0;const n=performance.now();phase='warp';travelled=L;uWarp=1;startAssembly(n+900);arrive(n,true);
+ if(wasStopped){lastT=0;requestAnimationFrame(frame)}fzT=setTimeout(startFinale,8500)};
+window.FZEND_STOP=function(){clearTimeout(fzT);SEP=.8;if(fin)endFinale();FZ.stopped=true};
 function startFinale(){
  if(phase!=='arrived'||fin||!FIG.n)return;
  setTour(false);if(openN!==null){openN=null;card.classList.remove('show')}
@@ -1810,7 +1815,7 @@ requestAnimationFrame(frame);startJourney();
 (()=>{
 /* hand-over from the intro: when the journey reaches Fairuz, the song starts and the slides take over */
 const FZ=window.FZ={isArrived:false,stopped:false,timer:0,
-  arrived(){this.isArrived=true;ignite()}};
+  arrived(){if(this.isArrived)return;this.isArrived=true;ignite()}};
 /* transition: a gold spark lights in the dark, then burns through the black like an old film reel,
    and the first slide shows through the hole as it widens */
 const BC=document.createElement('canvas');BC.id='burn';document.body.appendChild(BC);const bx=BC.getContext('2d');
@@ -1887,9 +1892,8 @@ function endLoop(now){endRAF=requestAnimationFrame(endLoop);const dt=Math.min(.0
     ex.fillStyle=`rgba(${r},${g},${b},${a*(txt?.5:.9)})`;const w=txt?Math.max(1.3,s*.026):Math.max(1,s*.05);ex.fillRect(X-w/2,Y-w/2,w,w);
     if(p.g&&k>=1&&(i&31)===0){ex.fillStyle=`rgba(255,200,110,${a*.05})`;ex.fillRect(X-w*4,Y-w*4,w*8,w*8)}}
 }
-function startEnding(){if(ending)return;ending=true;esize();EP=[];bigDone=false;nextB=.3;ET0=ELast=performance.now();
-  ex.fillStyle=EBG;ex.fillRect(0,0,EW,EH);EC.style.display='block';endRAF=requestAnimationFrame(endLoop);burnOut()}
-function stopEnding(){ending=false;cancelAnimationFrame(endRAF);EC.style.display='none';const app=document.getElementById('app');app.style.visibility='';app.style.clipPath=''}
+function startEnding(){if(ending)return;ending=true;if(window.FZEND)FZEND();burnOut()}
+function stopEnding(){ending=false;cancelAnimationFrame(endRAF);EC.style.display='none';if(window.FZEND_STOP)FZEND_STOP();const app=document.getElementById('app');app.style.opacity='';app.style.clipPath=''}
 function burnOut(){
   bsize();const app=document.getElementById('app'),t0=performance.now(),D=3.2,MAXR=Math.hypot(BW,BH)*.62;let last=t0;
   (function f(now){if(!ending)return;const t=(now-t0)/1000,dt=(now-last)/1000;last=now;const u=Math.min(1,t/D),e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
@@ -1905,7 +1909,7 @@ function burnOut(){
       SP.push({x:q[0],y:q[1],vx:Math.cos(a)*(40+Math.random()*120)+(Math.random()-.5)*60,vy:Math.sin(a)*(40+Math.random()*120)-60*Math.random(),r:1+Math.random()*2.2,t:0,l:.5+Math.random()*.9})}
     sparks(dt);
     if(u<1)requestAnimationFrame(f);
-    else{app.style.visibility='hidden';app.style.clipPath='';(function g(n){const d2=(n-last)/1000;last=n;bx.clearRect(0,0,BW,BH);sparks(d2);if(SP.length)requestAnimationFrame(g);else bx.clearRect(0,0,BW,BH)})(performance.now())}})(t0);
+    else{app.style.opacity='0';app.style.clipPath='';(function g(n){const d2=(n-last)/1000;last=n;bx.clearRect(0,0,BW,BH);sparks(d2);if(SP.length)requestAnimationFrame(g);else bx.clearRect(0,0,BW,BH)})(performance.now())}})(t0);
 }
 /* browsers only allow sound after the first click or key, so that is when the song starts if it could not yet */
 ['pointerdown','keydown'].forEach(t=>addEventListener(t,()=>{if(musicOn&&song.paused)music(true)},true));
