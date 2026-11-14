@@ -260,6 +260,7 @@ html,body{height:100%;margin:0;background:var(--ground);color:var(--ink);overflo
 @media (prefers-reduced-motion:reduce){.slide.on .cam{animation:none}}
 #app{z-index:100;background:var(--ground);opacity:0;pointer-events:none}
 #burn{position:fixed;inset:0;width:100%;height:100%;z-index:102;pointer-events:none}
+#endc{position:fixed;inset:0;width:100%;height:100%;z-index:99;display:none;pointer-events:none}
 body.slides #app{opacity:1;pointer-events:auto}
 #hud{z-index:101}</style>
 </head>
@@ -1847,7 +1848,64 @@ function burnThrough(){
       SP.push({x:q[0],y:q[1],vx:Math.cos(a)*(40+Math.random()*120)+(Math.random()-.5)*60,vy:Math.sin(a)*(40+Math.random()*120)-60*Math.random(),r:1+Math.random()*2.2,t:0,l:.5+Math.random()*.9})}
     sparks(dt);
     if(u<1)requestAnimationFrame(f);
-    else{app.style.clipPath='';(function g(n){const d2=(n-last)/1000;last=n;bx.clearRect(0,0,BW,BH);sparks(d2);if(SP.length)requestAnimationFrame(g);else BC.remove()})(performance.now())}})(t0);
+    else{app.style.clipPath='';(function g(n){const d2=(n-last)/1000;last=n;bx.clearRect(0,0,BW,BH);sparks(d2);if(SP.length)requestAnimationFrame(g);else bx.clearRect(0,0,BW,BH)})(performance.now())}})(t0);
+}
+/* ending: after the last slide the page burns away the same way, into a dark sky of 3D fireworks;
+   one last big firework gathers into the word شكراً */
+let ending=false,endRAF=0;
+const EC=document.createElement('canvas');EC.id='endc';document.body.appendChild(EC);const ex=EC.getContext('2d');
+let EW=0,EH=0,EF=1,EBG=null,EP=[],ET0=0,ELast=0,nextB=0,bigDone=false;const ESTAR=[];
+function esize(){const k=Math.min(2,devicePixelRatio||1);EW=innerWidth;EH=innerHeight;EC.width=EW*k;EC.height=EH*k;ex.setTransform(k,0,0,k,0,0);EF=Math.min(EW*.62,EH*1.05);
+  EBG=ex.createRadialGradient(EW/2,EH*.45,0,EW/2,EH*.45,Math.max(EW,EH)*.75);EBG.addColorStop(0,'#1f150b');EBG.addColorStop(.5,'#0e0a05');EBG.addColorStop(1,'#030201')}
+for(let i=0;i<320;i++)ESTAR.push([Math.random(),Math.random(),Math.random()*6.3,.3+Math.random()*1.2]);
+const ECOL=[[255,214,130],[255,240,205],[255,170,80],[245,195,120],[255,228,165]];
+function thanksTargets(n){const Wc=900,Hc=300,c=document.createElement('canvas');c.width=Wc;c.height=Hc;const g=c.getContext('2d');
+  g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';g.direction='rtl';g.font='bold 200px "Segoe UI","Noto Naskh Arabic",Tahoma,sans-serif';g.fillText('شكراً',Wc/2,Hc/2+12);
+  const d=g.getImageData(0,0,Wc,Hc).data,pts=[];for(let y=0;y<Hc;y+=2)for(let x=0;x<Wc;x+=2)if(d[(y*Wc+x)*4+3]>128)pts.push(x,y);
+  const m=pts.length/2,T=[];for(let i=0;i<n;i++){const p=((i*7919)%m)*2;T.push([(pts[p]/Wc-.5)*13,(pts[p+1]/Hc-.5)*13*Hc/Wc-.4,(Math.random()-.5)*.5])}return T}
+function burst(x,y,z,n,col,gather){const T=gather?thanksTargets(n):null;
+  for(let i=0;i<n;i++){const u=Math.random()*2-1,a=Math.random()*6.3,r=Math.sqrt(1-u*u),sp=(gather?1.6:1.8)+Math.random()*(gather?3.4:1.7);
+    const c=gather?ECOL[i%3===0?1:0]:col;
+    EP.push({x,y,z,vx:Math.cos(a)*r*sp,vy:u*sp,vz:Math.sin(a)*r*sp,c,t:0,l:gather?1e9:1.3+Math.random()*.9,g:T?T[i]:null,ph:Math.random()*6.3})}}
+function proj(x,y,z){const d=z<.5?.5:z;return[EW/2+x*EF/d,EH*.47+y*EF/d,EF/d]}
+function endLoop(now){endRAF=requestAnimationFrame(endLoop);const dt=Math.min(.05,(now-(ELast||now))/1000);ELast=now;const te=(now-ET0)/1000;
+  ex.globalCompositeOperation='source-over';ex.globalAlpha=.32;ex.fillStyle=EBG;ex.fillRect(0,0,EW,EH);ex.globalAlpha=1;
+  for(const [sx,sy,ph,s] of ESTAR){const a=.25+.25*Math.sin(te*1.4+ph);ex.fillStyle=`rgba(240,215,170,${a})`;ex.fillRect(sx*EW,sy*EH,s,s)}
+  if(te>nextB&&(te<5||bigDone)){const c=ECOL[(Math.random()*ECOL.length)|0];
+    burst((Math.random()-.5)*14,-1-Math.random()*3.5,bigDone?22+Math.random()*6:11+Math.random()*7,bigDone?70:120,c,false);nextB=te+(bigDone?1.6:.42)}
+  if(te>5.3&&!bigDone){bigDone=true;burst(0,-.6,12,3400,ECOL[0],true);nextB=te+2.5}
+  const yaw=.24*Math.sin(te*.35),cy=Math.cos(yaw),sy=Math.sin(yaw);
+  ex.globalCompositeOperation='lighter';
+  for(let i=EP.length-1;i>=0;i--){const p=EP[i];p.t+=dt;if(p.t>p.l){EP.splice(i,1);continue}
+    const dr=Math.pow(.42,dt);p.vx*=dr;p.vy=p.vy*dr+(p.g?.25:1.1)*dt;p.vz*=dr;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+    let x=p.x,y=p.y,z=p.z,a=p.g?1:Math.max(0,1-p.t/p.l),k=0;
+    if(p.g){k=Math.min(1,Math.max(0,(p.t-.85)/2.1));k=k*k*(3-2*k);
+      const tx=p.g[0]*cy+p.g[2]*sy,tz=12-p.g[0]*sy+p.g[2]*cy,ty=p.g[1]+Math.sin(te*1.6+p.ph)*.02;
+      x+=(tx-x)*k;y+=(ty-y)*k;z+=(tz-z)*k;if(k>=1)a=.75+.25*Math.sin(te*3+p.ph*3)}
+    const [X,Y,s]=proj(x,y,z),[r,g,b]=p.c,txt=p.g&&k>.6;
+    if(!p.g||k<1){const [X0,Y0]=proj(x-p.vx*.07,y-p.vy*.07,z-p.vz*.07);ex.strokeStyle=`rgba(${r},${g},${b},${a*.5})`;ex.lineWidth=Math.max(.6,s*.04);ex.beginPath();ex.moveTo(X0,Y0);ex.lineTo(X,Y);ex.stroke()}
+    ex.fillStyle=`rgba(${r},${g},${b},${a*(txt?.5:.9)})`;const w=txt?Math.max(1.3,s*.026):Math.max(1,s*.05);ex.fillRect(X-w/2,Y-w/2,w,w);
+    if(p.g&&k>=1&&(i&31)===0){ex.fillStyle=`rgba(255,200,110,${a*.05})`;ex.fillRect(X-w*4,Y-w*4,w*8,w*8)}}
+}
+function startEnding(){if(ending)return;ending=true;esize();EP=[];bigDone=false;nextB=.3;ET0=ELast=performance.now();
+  ex.fillStyle=EBG;ex.fillRect(0,0,EW,EH);EC.style.display='block';endRAF=requestAnimationFrame(endLoop);burnOut()}
+function stopEnding(){ending=false;cancelAnimationFrame(endRAF);EC.style.display='none';const app=document.getElementById('app');app.style.visibility='';app.style.clipPath=''}
+function burnOut(){
+  bsize();const app=document.getElementById('app'),t0=performance.now(),D=3.2,MAXR=Math.hypot(BW,BH)*.62;let last=t0;
+  (function f(now){if(!ending)return;const t=(now-t0)/1000,dt=(now-last)/1000;last=now;const u=Math.min(1,t/D),e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+    const R=12+e*MAXR,p=edge(R,t);
+    app.style.clipPath='polygon(evenodd,0% 0%,100% 0%,100% 100%,0% 100%,0% 0%,'+p.map(([x,y])=>(x/BW*100).toFixed(2)+'% '+(y/BH*100).toFixed(2)+'%').join(',')+','+(p[0][0]/BW*100).toFixed(2)+'% '+(p[0][1]/BH*100).toFixed(2)+'%)';
+    bx.clearRect(0,0,BW,BH);
+    // charred paper on the slide side of the hole
+    bx.save();bx.beginPath();bx.rect(0,0,BW,BH);p.forEach(([x,y],i)=>i?bx.lineTo(x,y):bx.moveTo(x,y));bx.closePath();bx.clip('evenodd');
+    bx.lineWidth=26;bx.strokeStyle='rgba(60,32,10,.55)';path(p,1);bx.stroke();bx.lineWidth=10;bx.strokeStyle='rgba(30,15,4,.7)';path(p,1);bx.stroke();bx.restore();
+    bx.shadowColor='rgba(255,140,30,.95)';bx.shadowBlur=28;bx.lineWidth=5;bx.strokeStyle='rgba(255,170,60,.95)';path(p,1);bx.stroke();
+    bx.shadowBlur=0;bx.lineWidth=1.6;bx.strokeStyle='rgba(255,240,190,1)';path(p,1);bx.stroke();
+    for(let i=0;i<10;i++){const q=p[(Math.random()*NV)|0],a=Math.atan2(q[1]-BH/2,q[0]-BW/2);
+      SP.push({x:q[0],y:q[1],vx:Math.cos(a)*(40+Math.random()*120)+(Math.random()-.5)*60,vy:Math.sin(a)*(40+Math.random()*120)-60*Math.random(),r:1+Math.random()*2.2,t:0,l:.5+Math.random()*.9})}
+    sparks(dt);
+    if(u<1)requestAnimationFrame(f);
+    else{app.style.visibility='hidden';app.style.clipPath='';(function g(n){const d2=(n-last)/1000;last=n;bx.clearRect(0,0,BW,BH);sparks(d2);if(SP.length)requestAnimationFrame(g);else bx.clearRect(0,0,BW,BH)})(performance.now())}})(t0);
 }
 /* browsers only allow sound after the first click or key, so that is when the song starts if it could not yet */
 ['pointerdown','keydown'].forEach(t=>addEventListener(t,()=>{if(musicOn&&song.paused)music(true)},true));
@@ -1982,7 +2040,7 @@ S.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.set
   b.onclick=e=>{e.stopPropagation();go(i)};dots.appendChild(b)});
 function clearT(){timers.forEach(clearTimeout);timers=[]}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake')}
-function go(i,opt={}){
+function go(i,opt={}){if(ending)stopEnding();
   if(i<0||i>=S.length)return;
   clearT();
   const prev=slides[cur];
@@ -1998,8 +2056,8 @@ function go(i,opt={}){
   timers.push(setTimeout(()=>{el.classList.add('clear');built=true},(S[i].end+.2)*1000));
 }
 function finish(){const el=slides[cur];clearT();el.classList.add('skip','clear');built=true}
-function next(){if(!started)return begin();if(!built)return finish();go(cur+1)}
-function prev(){if(started)go(cur-1,{skip:true})}
+function next(){if(!started)return begin();if(ending)return;if(!built)return finish();if(cur===S.length-1)return startEnding();go(cur+1)}
+function prev(){if(!started)return;if(ending){stopEnding();go(cur,{skip:true});return}go(cur-1,{skip:true})}
 
 /* music */
 const song=document.getElementById('song');let musicOn=true;
