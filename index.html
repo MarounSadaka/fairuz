@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" translate="no" class="notranslate">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#05030b">
 <title>فيروز ولبنان</title>
@@ -2069,8 +2069,8 @@ function prev(){if(!started)return;if(ending){stopEnding();go(cur,{skip:true});r
 
 /* music */
 const song=document.getElementById('song');let musicOn=true;
-function fadeTo(v){const st=song.volume,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1500);song.volume=st+(v-st)*k;if(k<1)requestAnimationFrame(f);else if(v===0)song.pause()})(t0)}
-function music(on){musicOn=on;if(on){if(song.paused){song.volume=0;song.play().then(()=>fadeTo(.5)).catch(()=>{})}else fadeTo(.5)}else fadeTo(0)}
+function fadeTo(v){const st=song.volume,t0=performance.now();(function f(t){const k=Math.max(0,Math.min(1,(t-t0)/1500));song.volume=Math.max(0,Math.min(1,st+(v-st)*k));if(k<1)requestAnimationFrame(f);else if(v===0)song.pause()})(t0)}
+function music(on){musicOn=on;if(on){if(song.paused){song.volume=0;song.play().then(()=>fadeTo(.8)).catch(()=>{})}else fadeTo(.8)}else fadeTo(0)}
 function begin(){if(started)return;started=true;clearTimeout(FZ.timer);document.body.classList.add('slides');size();music(true);go(0);poke();setTimeout(()=>{FZ.stopped=true},4000)}
 
 /* HUD */
@@ -2181,6 +2181,8 @@ size();requestAnimationFrame(frame);
   if(t>S[i].end)slides[i].classList.add('clear');})();
 
 const SONGS=[song.getAttribute('src'),document.getElementById('songB').getAttribute('src')];let songI=0;
+/* once the slides start the song must be playing: if the browser held it back, keep trying every second */
+setInterval(()=>{if(started&&musicOn&&song.paused)song.play().then(()=>{if(song.volume<.05)fadeTo(.8)}).catch(()=>{})},1000);
 song.addEventListener('ended',()=>{songI=(songI+1)%SONGS.length;song.src=SONGS[songI];if(musicOn)song.play().catch(()=>{})});
 })();
 </script>
